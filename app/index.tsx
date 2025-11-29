@@ -9,26 +9,41 @@ const STARTING_URL = 'https://www.weddingwin.ca/webapp';
 
 const injectedJavaScript = `
 (function () {
-  // Override window.open to force navigation in the same window
-  const originalOpen = window.open;
-  window.open = function (url, target, features) {
-    console.log('[WebView] Intercepted window.open:', url, 'target:', target);
-
-    if (!url || url === 'about:blank' || url === '') {
-      return null;
+  // Helper to rewrite target="_blank" to "_self"
+  function rewriteTarget(element) {
+    if (element && element.target === '_blank') {
+      element.target = '_self';
     }
+  }
 
-    // Force navigation in the same window
-    window.location.href = url;
-    return null;
+  // Intercept clicks on links
+  document.addEventListener('click', function(e) {
+    var element = e.target.closest('a');
+    if (element) {
+        rewriteTarget(element);
+    }
+  }, true);
+
+  // Intercept form submissions
+  document.addEventListener('submit', function(e) {
+    var element = e.target;
+    if (element && element.tagName === 'FORM') {
+        rewriteTarget(element);
+    }
+  }, true);
+
+  // Override window.open to force navigation in the same window
+  window.open = function (url) {
+    if (url && url !== 'about:blank') {
+       window.location.href = url;
+    }
+    return window;
   };
 
-  // Hide webdriver property to bypass bot detection
+  // Hide webdriver property
   Object.defineProperty(navigator, 'webdriver', {
     get: () => undefined,
   });
-
-  console.log('[WebView] Injection script loaded successfully');
 })();
 true;
 `;
@@ -48,10 +63,8 @@ export default function HomeScreen() {
     };
 
     const handleUrl = (url: string) => {
-      // Just navigate the WebView to the deep link URL if needed
-      // For this approach, we mainly rely on the WebView keeping the session
       if (url && webViewRef.current) {
-        // Optional: handle specific deep links if they come from outside
+        // Handle deep links if needed
       }
     };
 
@@ -92,14 +105,10 @@ export default function HomeScreen() {
   };
 
   const handleMessage = (event: any) => {
+    // Keep for debugging
     try {
-      // We might not use this much anymore with the simplified injection,
-      // but it's good to keep for debugging or future needs.
-      const data = JSON.parse(event.nativeEvent.data);
-      console.log('[RN] Message from WebView:', data);
-    } catch (error) {
-      console.log('[RN] Message (non-JSON):', event.nativeEvent.data);
-    }
+      console.log('[RN] Message:', event.nativeEvent.data);
+    } catch (e) { }
   };
 
   const handleOpenWindow = (syntheticEvent: any) => {
@@ -116,19 +125,12 @@ export default function HomeScreen() {
   };
 
   const handleShouldStartLoadWithRequest = (request: any) => {
-    console.log('[RN] Should start load:', request.url);
-
     if (request.url === 'about:blank' || request.url.startsWith('about:blank')) {
-      console.log('[RN] Blocking about:blank navigation');
       return false;
     }
-
     if (request.url.startsWith('blob:')) {
-      console.log('[RN] Blocking blob: URL');
       return false;
     }
-
-    // Allow everything else to load in the WebView
     return true;
   };
 
@@ -148,9 +150,7 @@ export default function HomeScreen() {
         onLoadEnd={handleLoadEnd}
         onNavigationStateChange={handleNavigationStateChange}
         onError={handleError}
-        onHttpError={handleHttpError}
         onMessage={handleMessage}
-        onOpenWindow={handleOpenWindow}
         onShouldStartLoadWithRequest={handleShouldStartLoadWithRequest}
         injectedJavaScript={injectedJavaScript}
         injectedJavaScriptBeforeContentLoaded={injectedJavaScript}
@@ -160,18 +160,16 @@ export default function HomeScreen() {
         scalesPageToFit={true}
         mixedContentMode="compatibility"
         allowsInlineMediaPlayback={true}
-        mediaPlaybackRequiresUserAction={false}
         sharedCookiesEnabled={true}
         thirdPartyCookiesEnabled={true}
         incognito={false}
         cacheEnabled={true}
-        setSupportMultipleWindows={true} // Keep true to catch window.open events if JS override fails
-        javaScriptCanOpenWindowsAutomatically={true}
+        setSupportMultipleWindows={false} // Disable multiple windows to force same-window nav
+        javaScriptCanOpenWindowsAutomatically={false} // Let our JS handle it
         allowsBackForwardNavigationGestures={true}
         originWhitelist={['*']}
         userAgent={Platform.select({
-          // Spoof as a standard mobile browser (remove 'wv' and 'Version/X.X')
-          ios: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148',
+          ios: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1',
           android: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36',
           default: undefined
         })}
