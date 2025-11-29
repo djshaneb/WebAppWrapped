@@ -8,14 +8,87 @@ import * as Linking from 'expo-linking';
 const STARTING_URL = 'https://www.weddingwin.ca/webapp';
 
 const injectedJavaScript = `
-(function () {
-  // Simple override for window.open to ensure it triggers onOpenWindow or stays in webview
-  window.open = function (url) {
-    if (url) {
-      window.location.href = url;
+(function() {
+  console.log('[WebView] Auth Bridge injection script loaded');
+
+  // Detect if running in native wrapper
+  const isNative = !!(window.ReactNativeWebView || window.Android || window.webkit?.messageHandlers?.nativeHandler);
+
+  if (isNative) {
+    console.log('[WebView] Native environment detected - setting up Google Auth interception');
+
+    // Function to send message to React Native
+    function sendToNative(message) {
+      if (window.ReactNativeWebView) {
+        window.ReactNativeWebView.postMessage(JSON.stringify(message));
+      } else if (window.Android) {
+        window.Android.postMessage(JSON.stringify(message));
+      } else if (window.webkit?.messageHandlers?.nativeHandler) {
+        window.webkit.messageHandlers.nativeHandler.postMessage(message);
+      }
     }
-    return window;
-  };
+
+    // Store original window.open
+    const originalWindowOpen = window.open;
+
+    // Override window.open to intercept Google OAuth
+    window.open = function(url, target, features) {
+      console.log('[WebView] window.open intercepted:', url);
+
+      // Check if this is a Google OAuth URL
+      if (url && (
+        url.includes('accounts.google.com/o/oauth2') ||
+        url.includes('accounts.google.com/signin/oauth')
+      )) {
+        console.log('[WebView] Google OAuth detected - delegating to native');
+
+        // Send message to native to handle OAuth
+        sendToNative({
+          type: 'LOGIN_GOOGLE',
+          url: url,
+          timestamp: Date.now()
+        });
+
+        // Prevent default behavior
+        return null;
+      }
+
+      // For non-OAuth URLs, use default behavior (navigate in same window)
+      if (url) {
+        window.location.href = url;
+      }
+      return window;
+    };
+
+    // Intercept clicks on Google Sign-In buttons
+    document.addEventListener('click', function(e) {
+      const element = e.target.closest('a, button');
+      if (!element) return;
+
+      const href = element.href || element.getAttribute('data-href');
+      const onclick = element.getAttribute('onclick');
+
+      // Check if this looks like a Google OAuth link
+      if ((href && (
+        href.includes('accounts.google.com/o/oauth2') ||
+        href.includes('accounts.google.com/signin/oauth')
+      )) || (onclick && onclick.includes('google'))) {
+        console.log('[WebView] Google OAuth link clicked - delegating to native');
+        e.preventDefault();
+        e.stopPropagation();
+
+        sendToNative({
+          type: 'LOGIN_GOOGLE',
+          url: href || 'GOOGLE_LOGIN_REQUESTED',
+          timestamp: Date.now()
+        });
+      }
+    }, true);
+
+    console.log('[WebView] Google OAuth interception configured');
+  } else {
+    console.log('[WebView] Web environment - using standard OAuth flow');
+  }
 })();
 true;
 `;
@@ -77,10 +150,33 @@ export default function HomeScreen() {
   };
 
   const handleMessage = (event: any) => {
-    // Keep for debugging
     try {
-      console.log('[RN] Message:', event.nativeEvent.data);
-    } catch (e) { }
+      const data = JSON.parse(event.nativeEvent.data);
+      console.log('[RN] Message from WebView:', data);
+
+      if (data.type === 'LOGIN_GOOGLE') {
+        console.log('[RN] Google Login request received:', data.url);
+        handleGoogleLogin(data.url);
+      }
+    } catch (e) {
+      console.log('[RN] Non-JSON message:', event.nativeEvent.data);
+    }
+  };
+
+  const handleGoogleLogin = async (url: string) => {
+    console.log('[RN] Opening Google OAuth in system browser:', url);
+
+    try {
+      if (url === 'GOOGLE_LOGIN_REQUESTED' || !url.startsWith('http')) {
+        console.warn('[RN] Invalid OAuth URL, cannot open browser');
+        return;
+      }
+
+      const result = await Linking.openURL(url);
+      console.log('[RN] Browser opened successfully');
+    } catch (error) {
+      console.error('[RN] Error opening browser:', error);
+    }
   };
 
   const handleOpenWindow = (syntheticEvent: any) => {
