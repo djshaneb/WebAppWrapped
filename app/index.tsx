@@ -74,13 +74,13 @@ export default function HomeScreen() {
     const handleUrl = (url: string) => {
       const { queryParams } = Linking.parse(url);
       if (queryParams?.code || queryParams?.token) {
-         // Extract code or token. Adjust based on what your auth provider returns.
-         // Assuming 'code' for standard OAuth or 'token' for implicit flow.
-         const code = queryParams.code || queryParams.token;
-         console.log('[RN] Extracted auth code/token:', code);
-         
-         if (code && webViewRef.current) {
-            const jsCode = `
+        // Extract code or token. Adjust based on what your auth provider returns.
+        // Assuming 'code' for standard OAuth or 'token' for implicit flow.
+        const code = queryParams.code || queryParams.token;
+        console.log('[RN] Extracted auth code/token:', code);
+
+        if (code && webViewRef.current) {
+          const jsCode = `
               console.log('[WebView] Received auth code from native');
               if (typeof handleNativeLogin === 'function') {
                 handleNativeLogin('${code}');
@@ -91,8 +91,8 @@ export default function HomeScreen() {
               }
               true;
             `;
-            webViewRef.current.injectJavaScript(jsCode);
-         }
+          webViewRef.current.injectJavaScript(jsCode);
+        }
       }
     };
 
@@ -115,26 +115,26 @@ export default function HomeScreen() {
       // Ensure the redirect URI matches what's configured in Google Cloud Console
       // and what the backend expects.
       // Typically: mycoolapp://google-callback
-      
+
       const result = await WebBrowser.openAuthSessionAsync(url, 'mycoolapp://google-callback');
       console.log('[RN] WebBrowser result:', result);
-      
+
       if (result.type === 'success' && result.url) {
-         // On iOS, the result URL is returned here.
-         // On Android, it might be handled by the Linking listener, but sometimes here too.
-         // We can try to handle it here just in case.
-         const { queryParams } = Linking.parse(result.url);
-         if (queryParams?.code || queryParams?.token) {
-             const code = queryParams.code || queryParams.token;
-             if (code && webViewRef.current) {
-                 webViewRef.current.injectJavaScript(`
+        // On iOS, the result URL is returned here.
+        // On Android, it might be handled by the Linking listener, but sometimes here too.
+        // We can try to handle it here just in case.
+        const { queryParams } = Linking.parse(result.url);
+        if (queryParams?.code || queryParams?.token) {
+          const code = queryParams.code || queryParams.token;
+          if (code && webViewRef.current) {
+            webViewRef.current.injectJavaScript(`
                     if (typeof handleNativeLogin === 'function') {
                         handleNativeLogin('${code}');
                     }
                     true;
                  `);
-             }
-         }
+          }
+        }
       }
     } catch (error) {
       console.error('[RN] WebBrowser error:', error);
@@ -188,14 +188,22 @@ export default function HomeScreen() {
     const { nativeEvent } = syntheticEvent;
     console.log('[RN] Window open request:', nativeEvent.targetUrl);
 
-    if (nativeEvent.targetUrl && nativeEvent.targetUrl !== 'about:blank') {
-      console.log('[RN] Redirecting popup to main window:', nativeEvent.targetUrl);
+    if (nativeEvent.targetUrl) {
+      if (nativeEvent.targetUrl.includes('accounts.google.com') ||
+        nativeEvent.targetUrl.includes('google.com/accounts')) {
+        console.log('[RN] Intercepting Google Login popup');
+        handleGoogleLogin(nativeEvent.targetUrl);
+        return;
+      }
 
-      if (webViewRef.current) {
-        webViewRef.current.injectJavaScript(`
-          window.location.href = "${nativeEvent.targetUrl}";
-          true;
-        `);
+      if (nativeEvent.targetUrl !== 'about:blank') {
+        console.log('[RN] Redirecting popup to main window:', nativeEvent.targetUrl);
+        if (webViewRef.current) {
+          webViewRef.current.injectJavaScript(`
+            window.location.href = "${nativeEvent.targetUrl}";
+            true;
+          `);
+        }
       }
     }
   };
@@ -214,10 +222,10 @@ export default function HomeScreen() {
     }
 
     // Intercept Google Login
-    if (request.url.includes('accounts.google.com')) {
-        console.log('[RN] Intercepting Google Login URL');
-        handleGoogleLogin(request.url);
-        return false;
+    if (request.url.includes('accounts.google.com') || request.url.includes('google.com/accounts')) {
+      console.log('[RN] Intercepting Google Login URL');
+      handleGoogleLogin(request.url);
+      return false;
     }
 
     return true;
@@ -256,7 +264,7 @@ export default function HomeScreen() {
         thirdPartyCookiesEnabled={true}
         incognito={false}
         cacheEnabled={true}
-        setSupportMultipleWindows={false}
+        setSupportMultipleWindows={true}
         javaScriptCanOpenWindowsAutomatically={true}
         allowsBackForwardNavigationGestures={true}
         originWhitelist={['*']}
