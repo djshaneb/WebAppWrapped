@@ -17,6 +17,12 @@ const injectedJavaScript = `
   if (isNative) {
     console.log('[WebView] Native environment detected - setting up Google Auth interception');
 
+    // Expose helper function for web app to check if in native environment
+    window.isNativeApp = true;
+    window.getNativeRedirectUri = function() {
+      return 'mycoolapp://oauth-callback';
+    };
+
     // Function to send message to React Native
     function sendToNative(message) {
       if (window.ReactNativeWebView) {
@@ -31,6 +37,29 @@ const injectedJavaScript = `
     // Store original window.open
     const originalWindowOpen = window.open;
 
+    // Helper to modify OAuth URL with correct redirect URI
+    function modifyOAuthUrl(url) {
+      try {
+        const urlObj = new URL(url);
+
+        // Check if this is a Google OAuth URL
+        if (urlObj.hostname.includes('accounts.google.com')) {
+          // Replace redirect_uri with our app scheme
+          const currentRedirectUri = urlObj.searchParams.get('redirect_uri');
+          console.log('[WebView] Current redirect_uri:', currentRedirectUri);
+
+          urlObj.searchParams.set('redirect_uri', 'mycoolapp://oauth-callback');
+          const modifiedUrl = urlObj.toString();
+
+          console.log('[WebView] Modified redirect_uri to: mycoolapp://oauth-callback');
+          return modifiedUrl;
+        }
+      } catch (e) {
+        console.warn('[WebView] Error modifying OAuth URL:', e);
+      }
+      return url;
+    }
+
     // Override window.open to intercept Google OAuth
     window.open = function(url, target, features) {
       console.log('[WebView] window.open intercepted:', url);
@@ -42,10 +71,13 @@ const injectedJavaScript = `
       )) {
         console.log('[WebView] Google OAuth detected - delegating to native');
 
+        // Modify the URL to use correct redirect URI
+        const modifiedUrl = modifyOAuthUrl(url);
+
         // Send message to native to handle OAuth
         sendToNative({
           type: 'LOGIN_GOOGLE',
-          url: url,
+          url: modifiedUrl,
           timestamp: Date.now()
         });
 
@@ -77,9 +109,12 @@ const injectedJavaScript = `
         e.preventDefault();
         e.stopPropagation();
 
+        // Modify the URL to use correct redirect URI
+        const modifiedUrl = href ? modifyOAuthUrl(href) : 'GOOGLE_LOGIN_REQUESTED';
+
         sendToNative({
           type: 'LOGIN_GOOGLE',
-          url: href || 'GOOGLE_LOGIN_REQUESTED',
+          url: modifiedUrl,
           timestamp: Date.now()
         });
       }
@@ -104,18 +139,93 @@ export default function HomeScreen() {
   useEffect(() => {
     const handleDeepLink = (event: { url: string }) => {
       console.log('[RN] Deep link received:', event.url);
-      handleUrl(event.url);
+      handleOAuthCallback(event.url);
     };
 
-    const handleUrl = (url: string) => {
-      if (url && webViewRef.current) {
-        // Handle deep links if needed
+    const handleOAuthCallback = (url: string) => {
+      if (!url || !webViewRef.current) return;
+
+      console.log('[RN] Processing OAuth callback URL:', url);
+
+      // Parse the URL to extract tokens
+      try {
+        const urlObj = new URL(url);
+
+        // Check if this is an OAuth callback
+        if (urlObj.protocol === 'mycoolapp:') {
+          // Extract tokens from query parameters or hash fragment
+          const params = new URLSearchParams(urlObj.search || urlObj.hash.substring(1));
+
+          const accessToken = params.get('access_token');
+          const idToken = params.get('id_token');
+          const code = params.get('code');
+          const error = params.get('error');
+
+          console.log('[RN] OAuth callback params:', {
+            hasAccessToken: !!accessToken,
+            hasIdToken: !!idToken,
+            hasCode: !!code,
+            error: error
+          });
+
+          if (error) {
+            console.error('[RN] OAuth error:', error);
+            // Inject error into WebView
+            const errorScript = `
+              if (window.onNativeLoginError) {
+                window.onNativeLoginError('${error}');
+              }
+              true;
+            `;
+            webViewRef.current.injectJavaScript(errorScript);
+            return;
+          }
+
+          if (accessToken || idToken || code) {
+            console.log('[RN] Sending tokens to WebView');
+
+            // Create token object
+            const tokenData = {
+              accessToken: accessToken || '',
+              idToken: idToken || '',
+              code: code || '',
+              tokenType: 'Bearer'
+            };
+
+            // Inject success callback into WebView
+            const successScript = `
+              console.log('[WebView] Received OAuth tokens from native');
+              if (window.onNativeLoginSuccess) {
+                window.onNativeLoginSuccess(${JSON.stringify(tokenData)});
+              } else {
+                console.warn('[WebView] onNativeLoginSuccess not defined yet');
+              }
+              true;
+            `;
+            webViewRef.current.injectJavaScript(successScript);
+
+            // Also navigate back to the main page to ensure WebView shows content
+            setTimeout(() => {
+              if (webViewRef.current) {
+                webViewRef.current.injectJavaScript(`
+                  window.location.href = '${STARTING_URL}';
+                  true;
+                `);
+              }
+            }, 500);
+          }
+        }
+      } catch (error) {
+        console.error('[RN] Error parsing OAuth callback URL:', error);
       }
     };
 
     // Handle initial URL if app was opened via deep link
     Linking.getInitialURL().then((url) => {
-      if (url) handleUrl(url);
+      if (url) {
+        console.log('[RN] Initial URL:', url);
+        handleOAuthCallback(url);
+      }
     });
 
     // Listen for incoming links
