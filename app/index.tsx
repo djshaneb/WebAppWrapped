@@ -125,13 +125,24 @@ export default function HomeScreen() {
   };
 
   const handleShouldStartLoadWithRequest = (request: any) => {
-    if (request.url === 'about:blank' || request.url.startsWith('about:blank')) {
-      return false;
+    const { url } = request;
+
+    // Allow http and https requests to load in the WebView
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      return true;
     }
-    if (request.url.startsWith('blob:')) {
-      return false;
-    }
-    return true;
+
+    // Handle other schemes (mailto, tel, etc.) with the system handler
+    Linking.canOpenURL(url).then((supported) => {
+      if (supported) {
+        Linking.openURL(url);
+      } else {
+        console.warn('Cannot open URL:', url);
+      }
+    }).catch(err => console.error('An error occurred', err));
+
+    // Prevent the WebView from loading these URLs
+    return false;
   };
 
   const handleHttpError = (syntheticEvent: any) => {
