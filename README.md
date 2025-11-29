@@ -1,25 +1,26 @@
 # WeddingWin - Google OAuth Native Bridge
 
-## 🚨 Still Getting Error 400?
+## 🚨 IMPORTANT: Google OAuth Policy Change (2024/2025)
 
 Getting `Error 400: invalid_request - redirect_uri=mycoolapp://oauth-callback`?
 
-**→ First: Restart your app and check Metro logs for the Client ID**
+**Google no longer supports custom URI schemes by default!**
 
-**→ Then Read: [IMMEDIATE_WORKAROUND.md](IMMEDIATE_WORKAROUND.md)** (works right now!)
+**→ READ: [OAUTH_POLICY_UPDATE_2024.md](OAUTH_POLICY_UPDATE_2024.md)** - Explains the policy change
 
-**→ Or: [FIX_REDIRECT_URI_ERROR.md](FIX_REDIRECT_URI_ERROR.md)** (comprehensive guide)
-
-**→ Or: [QUICK_FIX.md](QUICK_FIX.md)** (5 minute fix if you have iOS/Android client)
+**This app now uses HTTPS redirects with Universal Links/App Links (compliant with Google's new policy)**
 
 ## 📚 Documentation
 
-### Setup & Configuration
-- **[IMMEDIATE_WORKAROUND.md](IMMEDIATE_WORKAROUND.md)** - Works right now! (START HERE!)
+### Setup & Configuration (UPDATED FOR 2024/2025)
+- **[OAUTH_POLICY_UPDATE_2024.md](OAUTH_POLICY_UPDATE_2024.md)** - ⚠️ READ THIS FIRST - Google's new policy
+- **[IMMEDIATE_WORKAROUND.md](IMMEDIATE_WORKAROUND.md)** - Alternative solutions
 - **[FIX_REDIRECT_URI_ERROR.md](FIX_REDIRECT_URI_ERROR.md)** - Fix redirect_uri error
 - **[IDENTIFY_CLIENT_ID.md](IDENTIFY_CLIENT_ID.md)** - Find which Client ID you're using
-- **[QUICK_FIX.md](QUICK_FIX.md)** - Fast fix for Error 400 (if you have iOS/Android client)
-- **[GOOGLE_CONSOLE_SETUP_GUIDE.md](GOOGLE_CONSOLE_SETUP_GUIDE.md)** - Visual walkthrough
+
+### Legacy Guides (Custom URI Schemes - Deprecated)
+- **[QUICK_FIX.md](QUICK_FIX.md)** - Old method using custom URI schemes
+- **[GOOGLE_CONSOLE_SETUP_GUIDE.md](GOOGLE_CONSOLE_SETUP_GUIDE.md)** - Visual walkthrough (deprecated approach)
 - **[GOOGLE_OAUTH_ERROR_FIX.md](GOOGLE_OAUTH_ERROR_FIX.md)** - Detailed error explanation
 - **[OAUTH_SETUP_INSTRUCTIONS.md](OAUTH_SETUP_INSTRUCTIONS.md)** - Configuration guide
 
@@ -39,25 +40,61 @@ This is a React Native (Expo) WebView app that:
 - Loads https://www.weddingwin.ca/webapp
 - Enables Google OAuth authentication in mobile app
 - Fixes the `403 disallowed_useragent` error
-- Handles OAuth callbacks via deep links
+- **Uses HTTPS redirects with Universal Links/App Links (Google's new policy compliant)**
+- Supports both custom URI schemes (legacy) and HTTPS redirects
 
 ## ⚡ Quick Start
 
-1. **Fix the Google OAuth error:**
-   ```
-   Read QUICK_FIX.md and enable custom URI scheme in Google Console
-   ```
+### Step 1: Add HTTPS Redirect to Google Console
 
-2. **Run the app:**
-   ```bash
-   npm run dev
+1. Go to [Google Cloud Console](https://console.cloud.google.com/apis/credentials)
+2. Select your OAuth Client
+3. Under "Authorized redirect URIs", add:
    ```
+   https://weddingwin.ca/oauth-callback
+   ```
+4. Click SAVE (works immediately!)
 
-3. **Test OAuth:**
-   - Click "Sign in with Google"
-   - Complete authentication in Safari
-   - Return to app
-   - You're logged in! ✅
+### Step 2: Set Up Domain Verification
+
+Create these files on `weddingwin.ca`:
+
+**For iOS:** `/.well-known/apple-app-site-association`
+```json
+{
+  "applinks": {
+    "apps": [],
+    "details": [{"appID": "TEAM_ID.com.weddingwin.app", "paths": ["/oauth-callback"]}]
+  }
+}
+```
+
+**For Android:** `/.well-known/assetlinks.json`
+```json
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "com.weddingwin.app",
+    "sha256_cert_fingerprints": ["YOUR_SHA256_HERE"]
+  }
+}]
+```
+
+### Step 3: Run the App
+
+```bash
+npm run dev
+```
+
+### Step 4: Test OAuth
+
+- Click "Sign in with Google"
+- Complete authentication in Safari
+- App opens automatically with tokens
+- You're logged in! ✅
+
+**See [OAUTH_POLICY_UPDATE_2024.md](OAUTH_POLICY_UPDATE_2024.md) for detailed setup**
 
 ## 🐛 Troubleshooting
 
@@ -105,23 +142,26 @@ This is a React Native (Expo) WebView app that:
 | 🔧 Technical details | [IMPLEMENTATION_SUMMARY.md](IMPLEMENTATION_SUMMARY.md) |
 | 📱 Native iOS/Android code | [NATIVE_BRIDGE_GUIDE.md](NATIVE_BRIDGE_GUIDE.md) |
 
-## ✅ Checklist
+## ✅ Checklist (Updated for 2024/2025)
 
 Before testing, ensure:
-- ✅ Custom URI scheme enabled in Google Console
-- ✅ Waited 5-30 minutes after enabling
-- ✅ Using iOS or Android OAuth client (not Web)
-- ✅ Redirect URI `mycoolapp://oauth-callback` configured
-- ✅ App scheme in app.json is `mycoolapp`
+- ✅ HTTPS redirect URI added to Google Console: `https://weddingwin.ca/oauth-callback`
+- ✅ `.well-known/apple-app-site-association` file created on server
+- ✅ `.well-known/assetlinks.json` file created on server
+- ✅ Universal Links configured in app.json (iOS)
+- ✅ App Links configured in app.json (Android)
+- ✅ Domain verification files accessible via HTTPS
+- ✅ Using any OAuth client type (Web, iOS, or Android - all support HTTPS redirects)
 
 ## 🆘 Support
 
 If you're stuck:
-1. Check [QUICK_FIX.md](QUICK_FIX.md) first
-2. Read [GOOGLE_CONSOLE_SETUP_GUIDE.md](GOOGLE_CONSOLE_SETUP_GUIDE.md)
-3. Review [TESTING_GUIDE.md](TESTING_GUIDE.md)
-4. Check Metro logs for error messages
+1. **Read [OAUTH_POLICY_UPDATE_2024.md](OAUTH_POLICY_UPDATE_2024.md) first** - Explains Google's new policy
+2. Check Metro logs for OAuth URL details
+3. Verify domain verification files are accessible
+4. Review [TESTING_GUIDE.md](TESTING_GUIDE.md)
+5. Test Universal Links/App Links independently
 
 ---
 
-**Start here:** [QUICK_FIX.md](QUICK_FIX.md) 🚀
+**Start here:** [OAUTH_POLICY_UPDATE_2024.md](OAUTH_POLICY_UPDATE_2024.md) ⚠️

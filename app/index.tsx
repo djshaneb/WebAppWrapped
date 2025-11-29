@@ -44,14 +44,17 @@ const injectedJavaScript = `
 
         // Check if this is a Google OAuth URL
         if (urlObj.hostname.includes('accounts.google.com')) {
-          // Replace redirect_uri with our app scheme
+          // Replace redirect_uri with HTTPS redirect (Google's new policy)
           const currentRedirectUri = urlObj.searchParams.get('redirect_uri');
           console.log('[WebView] Current redirect_uri:', currentRedirectUri);
 
-          urlObj.searchParams.set('redirect_uri', 'mycoolapp://oauth-callback');
+          // Use HTTPS redirect with Universal Links/App Links instead of custom scheme
+          // This complies with Google's new OAuth policy
+          urlObj.searchParams.set('redirect_uri', 'https://weddingwin.ca/oauth-callback');
           const modifiedUrl = urlObj.toString();
 
-          console.log('[WebView] Modified redirect_uri to: mycoolapp://oauth-callback');
+          console.log('[WebView] Modified redirect_uri to: https://weddingwin.ca/oauth-callback');
+          console.log('[WebView] Using HTTPS redirect (Google OAuth policy compliant)');
           return modifiedUrl;
         }
       } catch (e) {
@@ -151,8 +154,22 @@ export default function HomeScreen() {
       try {
         const urlObj = new URL(url);
 
-        // Check if this is an OAuth callback
-        if (urlObj.protocol === 'mycoolapp:') {
+        // Check if this is an OAuth callback (support both custom scheme and HTTPS)
+        const isCustomScheme = urlObj.protocol === 'mycoolapp:';
+        const isHttpsCallback =
+          (urlObj.protocol === 'https:' || urlObj.protocol === 'http:') &&
+          urlObj.hostname === 'weddingwin.ca' &&
+          urlObj.pathname === '/oauth-callback';
+
+        if (isCustomScheme || isHttpsCallback) {
+          console.log('[RN] OAuth callback detected:', {
+            isCustomScheme,
+            isHttpsCallback,
+            protocol: urlObj.protocol,
+            hostname: urlObj.hostname,
+            pathname: urlObj.pathname
+          });
+
           // Extract tokens from query parameters or hash fragment
           const params = new URLSearchParams(urlObj.search || urlObj.hash.substring(1));
 
