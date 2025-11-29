@@ -9,41 +9,13 @@ const STARTING_URL = 'https://www.weddingwin.ca/webapp';
 
 const injectedJavaScript = `
 (function () {
-  // Helper to rewrite target="_blank" to "_self"
-  function rewriteTarget(element) {
-    if (element && element.target === '_blank') {
-      element.target = '_self';
-    }
-  }
-
-  // Intercept clicks on links
-  document.addEventListener('click', function(e) {
-    var element = e.target.closest('a');
-    if (element) {
-        rewriteTarget(element);
-    }
-  }, true);
-
-  // Intercept form submissions
-  document.addEventListener('submit', function(e) {
-    var element = e.target;
-    if (element && element.tagName === 'FORM') {
-        rewriteTarget(element);
-    }
-  }, true);
-
-  // Override window.open to force navigation in the same window
+  // Simple override for window.open to ensure it triggers onOpenWindow or stays in webview
   window.open = function (url) {
-    if (url && url !== 'about:blank') {
-       window.location.href = url;
+    if (url) {
+      window.location.href = url;
     }
     return window;
   };
-
-  // Hide webdriver property
-  Object.defineProperty(navigator, 'webdriver', {
-    get: () => undefined,
-  });
 })();
 true;
 `;
@@ -175,15 +147,12 @@ export default function HomeScreen() {
         thirdPartyCookiesEnabled={true}
         incognito={false}
         cacheEnabled={true}
-        setSupportMultipleWindows={false} // Disable multiple windows to force same-window nav
-        javaScriptCanOpenWindowsAutomatically={false} // Let our JS handle it
+        setSupportMultipleWindows={true} // Enable multiple windows for Google Login popups
+        onOpenWindow={handleOpenWindow} // Handle them manually
+        javaScriptCanOpenWindowsAutomatically={true}
         allowsBackForwardNavigationGestures={true}
         originWhitelist={['*']}
-        userAgent={Platform.select({
-          ios: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1',
-          android: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36',
-          default: undefined
-        })}
+        userAgent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36"
         applicationNameForUserAgent=""
       />
       {loading && (
