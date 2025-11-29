@@ -12,6 +12,8 @@ Getting `Error 400: invalid_request` from Google?
 
 ### Setup & Configuration
 - **[QUICK_FIX.md](QUICK_FIX.md)** - Fast fix for Error 400 (START HERE!)
+- **[FIX_REDIRECT_URI_ERROR.md](FIX_REDIRECT_URI_ERROR.md)** - Fix redirect_uri error (YOU ARE HERE!)
+- **[IDENTIFY_CLIENT_ID.md](IDENTIFY_CLIENT_ID.md)** - Find which Client ID you're using
 - **[GOOGLE_CONSOLE_SETUP_GUIDE.md](GOOGLE_CONSOLE_SETUP_GUIDE.md)** - Visual walkthrough
 - **[GOOGLE_OAUTH_ERROR_FIX.md](GOOGLE_OAUTH_ERROR_FIX.md)** - Detailed error explanation
 - **[OAUTH_SETUP_INSTRUCTIONS.md](OAUTH_SETUP_INSTRUCTIONS.md)** - Configuration guide
