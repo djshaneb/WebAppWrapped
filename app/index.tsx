@@ -9,52 +9,37 @@ import * as Linking from 'expo-linking';
 const STARTING_URL = 'https://www.weddingwin.ca/webapp';
 
 const injectedJavaScript = `
-  (function() {
-    // Override window.open to prevent popups and load URLs in the same window
-    const originalOpen = window.open;
-    window.open = function(url, target, features) {
-      console.log('[WebView] Intercepted window.open:', url, 'target:', target);
+(function () {
+  // Override window.open to send message to Native
+  const originalOpen = window.open;
+  window.open = function (url, target, features) {
+    console.log('[WebView] Intercepted window.open:', url, 'target:', target);
 
-      if (!url || url === 'about:blank' || url === '') {
-        console.log('[WebView] Ignoring blank URL');
-        return null;
-      }
+    if (!url || url === 'about:blank' || url === '') {
+      return null;
+    }
 
-      // Post message to React Native
-      if (window.ReactNativeWebView) {
-        window.ReactNativeWebView.postMessage(JSON.stringify({
-          type: 'WINDOW_OPEN',
-          url: url,
-          target: target
-        }));
-      }
+    // Post message to React Native and let IT decide what to do
+    if ((window as any).ReactNativeWebView) {
+      (window as any).ReactNativeWebView.postMessage(JSON.stringify({
+        type: 'WINDOW_OPEN',
+        url: url,
+        target: target
+      }));
+    }
 
-      // Navigate in the same window
-      window.location.href = url;
-      return window;
-    };
+    // DO NOT navigate here. Wait for Native to handle it.
+    return null;
+  };
 
-    // Override links that try to open in new tab
-    document.addEventListener('click', function(e) {
-      const link = e.target.closest('a');
-      if (link && (link.target === '_blank' || link.target === '_new')) {
-        console.log('[WebView] Intercepted _blank link:', link.href);
-        e.preventDefault();
-        e.stopPropagation();
-        if (link.href && link.href !== 'about:blank') {
-          window.location.href = link.href;
-        }
-      }
-    }, true);
+  // Hide webdriver property to bypass bot detection
+  Object.defineProperty(navigator, 'webdriver', {
+    get: () => undefined,
+  });
 
-    // Hide webdriver property to bypass bot detection
-    Object.defineProperty(navigator, 'webdriver', {
-      get: () => undefined,
-    });
-
-    console.log('[WebView] Injection script loaded successfully');
-  })();
-  true;
+  console.log('[WebView] Injection script loaded successfully');
+})();
+true;
 `;
 
 export default function HomeScreen() {
@@ -81,16 +66,16 @@ export default function HomeScreen() {
 
         if (code && webViewRef.current) {
           const jsCode = `
-              console.log('[WebView] Received auth code from native');
-              if (typeof handleNativeLogin === 'function') {
-                handleNativeLogin('${code}');
-              } else {
-                console.warn('[WebView] handleNativeLogin function not found');
-                // Fallback: try to redirect or set a global variable
-                window.authCode = '${code}';
-              }
-              true;
-            `;
+console.log('[WebView] Received auth code from native');
+if (typeof handleNativeLogin === 'function') {
+  handleNativeLogin('${code}');
+} else {
+  console.warn('[WebView] handleNativeLogin function not found');
+  // Fallback: try to redirect or set a global variable
+  window.authCode = '${code}';
+}
+true;
+`;
           webViewRef.current.injectJavaScript(jsCode);
         }
       }
@@ -128,11 +113,11 @@ export default function HomeScreen() {
           const code = queryParams.code || queryParams.token;
           if (code && webViewRef.current) {
             webViewRef.current.injectJavaScript(`
-                    if (typeof handleNativeLogin === 'function') {
-                        handleNativeLogin('${code}');
-                    }
-                    true;
-                 `);
+if (typeof handleNativeLogin === 'function') {
+  handleNativeLogin('${code}');
+}
+true;
+`);
           }
         }
       }
@@ -155,10 +140,9 @@ export default function HomeScreen() {
     );
 
     if (isOAuthUrl && navState.loading) {
-      console.log('[RN] Fail-safe: Intercepting Google Login in NavigationStateChange');
-      webViewRef.current?.stopLoading();
-      handleGoogleLogin(navState.url);
-      return;
+      // console.log('[RN] Monitoring OAuth URL:', navState.url);
+      // We don't stop loading here anymore to avoid white screen, 
+      // relying on onShouldStartLoadWithRequest and onOpenWindow/postMessage instead.
     }
 
     console.log('Navigation:', {
@@ -187,6 +171,26 @@ export default function HomeScreen() {
 
       if (data.type === 'WINDOW_OPEN' && data.url && data.url !== 'about:blank') {
         console.log('[RN] Handling window.open from JS:', data.url);
+
+        // Check for Google Login
+        if (data.url.includes('accounts.google.com') ||
+          data.url.includes('google.com/accounts') ||
+          data.url.includes('oauth') ||
+          data.url.includes('signin') ||
+          data.url.includes('v1/auth')) {
+
+          console.log('[RN] Intercepted Google Login via JS message');
+          handleGoogleLogin(data.url);
+        } else {
+          // Not Google? Navigate the WebView
+          console.log('[RN] Navigating WebView to:', data.url);
+          if (webViewRef.current) {
+            webViewRef.current.injectJavaScript(`
+window.location.href = "${data.url}";
+true;
+`);
+          }
+        }
       }
     } catch (error) {
       console.log('[RN] Message (non-JSON):', event.nativeEvent.data);
@@ -211,9 +215,9 @@ export default function HomeScreen() {
         console.log('[RN] Redirecting popup to main window:', nativeEvent.targetUrl);
         if (webViewRef.current) {
           webViewRef.current.injectJavaScript(`
-            window.location.href = "${nativeEvent.targetUrl}";
-            true;
-          `);
+window.location.href = "${nativeEvent.targetUrl}";
+true;
+`);
         }
       }
     }
@@ -283,8 +287,8 @@ export default function HomeScreen() {
         allowsBackForwardNavigationGestures={true}
         originWhitelist={['*']}
         userAgent={Platform.select({
-          ios: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Mobile/15E148 Safari/604.1',
-          android: 'Mozilla/5.0 (Linux; Android 14; SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.6099.144 Mobile Safari/537.36',
+          ios: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1',
+          android: 'Mozilla/5.0 (Linux; Android 14; Pixel 8 Build/UQ1A.240205.004) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.6261.105 Mobile Safari/537.36',
           default: undefined
         })}
         applicationNameForUserAgent=""
