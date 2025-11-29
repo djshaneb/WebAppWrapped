@@ -1,8 +1,10 @@
 import { View, StyleSheet, ActivityIndicator, TouchableOpacity, Platform } from 'react-native';
 import { WebView } from 'react-native-webview';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChevronLeft, ChevronRight } from 'lucide-react-native';
+import * as WebBrowser from 'expo-web-browser';
+import * as Linking from 'expo-linking';
 
 const STARTING_URL = 'https://www.weddingwin.ca/webapp';
 
@@ -62,6 +64,82 @@ export default function HomeScreen() {
   const [isFirstPage, setIsFirstPage] = useState(true);
   const [key, setKey] = useState(0);
   const webViewRef = useRef<WebView>(null);
+
+  useEffect(() => {
+    const handleDeepLink = (event: { url: string }) => {
+      console.log('[RN] Deep link received:', event.url);
+      handleUrl(event.url);
+    };
+
+    const handleUrl = (url: string) => {
+      const { queryParams } = Linking.parse(url);
+      if (queryParams?.code || queryParams?.token) {
+         // Extract code or token. Adjust based on what your auth provider returns.
+         // Assuming 'code' for standard OAuth or 'token' for implicit flow.
+         const code = queryParams.code || queryParams.token;
+         console.log('[RN] Extracted auth code/token:', code);
+         
+         if (code && webViewRef.current) {
+            const jsCode = `
+              console.log('[WebView] Received auth code from native');
+              if (typeof handleNativeLogin === 'function') {
+                handleNativeLogin('${code}');
+              } else {
+                console.warn('[WebView] handleNativeLogin function not found');
+                // Fallback: try to redirect or set a global variable
+                window.authCode = '${code}';
+              }
+              true;
+            `;
+            webViewRef.current.injectJavaScript(jsCode);
+         }
+      }
+    };
+
+    // Handle initial URL if app was opened via deep link
+    Linking.getInitialURL().then((url) => {
+      if (url) handleUrl(url);
+    });
+
+    // Listen for incoming links
+    const subscription = Linking.addEventListener('url', handleDeepLink);
+
+    return () => {
+      subscription.remove();
+    };
+  }, []);
+
+  const handleGoogleLogin = async (url: string) => {
+    try {
+      console.log('[RN] Opening system browser for Google Login:', url);
+      // Ensure the redirect URI matches what's configured in Google Cloud Console
+      // and what the backend expects.
+      // Typically: mycoolapp://google-callback
+      
+      const result = await WebBrowser.openAuthSessionAsync(url, 'mycoolapp://google-callback');
+      console.log('[RN] WebBrowser result:', result);
+      
+      if (result.type === 'success' && result.url) {
+         // On iOS, the result URL is returned here.
+         // On Android, it might be handled by the Linking listener, but sometimes here too.
+         // We can try to handle it here just in case.
+         const { queryParams } = Linking.parse(result.url);
+         if (queryParams?.code || queryParams?.token) {
+             const code = queryParams.code || queryParams.token;
+             if (code && webViewRef.current) {
+                 webViewRef.current.injectJavaScript(`
+                    if (typeof handleNativeLogin === 'function') {
+                        handleNativeLogin('${code}');
+                    }
+                    true;
+                 `);
+             }
+         }
+      }
+    } catch (error) {
+      console.error('[RN] WebBrowser error:', error);
+    }
+  };
 
   const handleNavigationStateChange = (navState: any) => {
     setCanGoBack(navState.canGoBack);
@@ -133,6 +211,13 @@ export default function HomeScreen() {
     if (request.url.startsWith('blob:')) {
       console.log('[RN] Blocking blob: URL');
       return false;
+    }
+
+    // Intercept Google Login
+    if (request.url.includes('accounts.google.com')) {
+        console.log('[RN] Intercepting Google Login URL');
+        handleGoogleLogin(request.url);
+        return false;
     }
 
     return true;
