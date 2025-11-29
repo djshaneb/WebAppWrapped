@@ -50,10 +50,10 @@ const injectedJavaScript = `
 
           // Use HTTPS redirect with Universal Links/App Links instead of custom scheme
           // This complies with Google's new OAuth policy
-          urlObj.searchParams.set('redirect_uri', 'https://weddingwin.ca/oauth-callback');
+          urlObj.searchParams.set('redirect_uri', 'https://www.weddingwin.ca/oauth-callback');
           const modifiedUrl = urlObj.toString();
 
-          console.log('[WebView] Modified redirect_uri to: https://weddingwin.ca/oauth-callback');
+          console.log('[WebView] Modified redirect_uri to: https://www.weddingwin.ca/oauth-callback');
           console.log('[WebView] Using HTTPS redirect (Google OAuth policy compliant)');
           return modifiedUrl;
         }
@@ -158,7 +158,7 @@ export default function HomeScreen() {
         const isCustomScheme = urlObj.protocol === 'mycoolapp:';
         const isHttpsCallback =
           (urlObj.protocol === 'https:' || urlObj.protocol === 'http:') &&
-          urlObj.hostname === 'weddingwin.ca' &&
+          urlObj.hostname === 'www.weddingwin.ca' &&
           urlObj.pathname === '/oauth-callback';
 
         if (isCustomScheme || isHttpsCallback) {
@@ -307,13 +307,13 @@ export default function HomeScreen() {
       console.log('[RN] ================================');
 
       // Provide helpful instructions
-      if (redirectUri === 'https://weddingwin.ca/oauth-callback') {
+      if (redirectUri === 'https://www.weddingwin.ca/oauth-callback') {
         console.log('[RN] ✅ Using HTTPS redirect (compliant with Google policy)');
         console.log('[RN]');
         console.log('[RN] If you get "redirect_uri_mismatch" error:');
         console.log('[RN] 1. Go to: console.cloud.google.com/apis/credentials');
         console.log('[RN] 2. Find Client ID:', clientId);
-        console.log('[RN] 3. Add redirect URI: https://weddingwin.ca/oauth-callback');
+        console.log('[RN] 3. Add redirect URI: https://www.weddingwin.ca/oauth-callback');
         console.log('[RN] 4. Save (works immediately!)');
         console.log('[RN]');
         console.log('[RN] See: ADD_REDIRECT_URI_GUIDE.md for detailed steps');
