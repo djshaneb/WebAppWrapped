@@ -148,9 +148,18 @@ export default function HomeScreen() {
 
     const isOAuthUrl = navState.url && (
       navState.url.includes('accounts.google.com') ||
+      navState.url.includes('google.com/accounts') ||
       navState.url.includes('oauth') ||
-      navState.url.includes('signin')
+      navState.url.includes('signin') ||
+      navState.url.includes('v1/auth')
     );
+
+    if (isOAuthUrl && navState.loading) {
+      console.log('[RN] Fail-safe: Intercepting Google Login in NavigationStateChange');
+      webViewRef.current?.stopLoading();
+      handleGoogleLogin(navState.url);
+      return;
+    }
 
     console.log('Navigation:', {
       url: navState.url,
@@ -190,7 +199,9 @@ export default function HomeScreen() {
 
     if (nativeEvent.targetUrl) {
       if (nativeEvent.targetUrl.includes('accounts.google.com') ||
-        nativeEvent.targetUrl.includes('google.com/accounts')) {
+        nativeEvent.targetUrl.includes('google.com/accounts') ||
+        nativeEvent.targetUrl.includes('oauth') ||
+        nativeEvent.targetUrl.includes('signin')) {
         console.log('[RN] Intercepting Google Login popup');
         handleGoogleLogin(nativeEvent.targetUrl);
         return;
@@ -222,7 +233,10 @@ export default function HomeScreen() {
     }
 
     // Intercept Google Login
-    if (request.url.includes('accounts.google.com') || request.url.includes('google.com/accounts')) {
+    if (request.url.includes('accounts.google.com') ||
+      request.url.includes('google.com/accounts') ||
+      request.url.includes('oauth') ||
+      request.url.includes('signin')) {
       console.log('[RN] Intercepting Google Login URL');
       handleGoogleLogin(request.url);
       return false;
