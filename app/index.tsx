@@ -49,6 +49,7 @@ export default function HomeScreen() {
   const [isFirstPage, setIsFirstPage] = useState(true);
   const [key, setKey] = useState(0);
   const webViewRef = useRef<WebView>(null);
+  const isAuthSessionActive = useRef(false);
 
   useEffect(() => {
     const handleDeepLink = (event: { url: string }) => {
@@ -95,11 +96,20 @@ true;
   }, []);
 
   const handleGoogleLogin = async (url: string) => {
+    if (isAuthSessionActive.current) {
+      console.log('[RN] Auth session already active, ignoring request:', url);
+      return;
+    }
+
     try {
+      isAuthSessionActive.current = true;
       console.log('[RN] Opening system browser for Google Login:', url);
       // Ensure the redirect URI matches what's configured in Google Cloud Console
       // and what the backend expects.
       // Typically: mycoolapp://google-callback
+
+      // Optional: dismiss any existing session just in case
+      WebBrowser.dismissBrowser();
 
       const result = await WebBrowser.openAuthSessionAsync(url, 'mycoolapp://google-callback');
       console.log('[RN] WebBrowser result:', result);
@@ -123,6 +133,8 @@ true;
       }
     } catch (error) {
       console.error('[RN] WebBrowser error:', error);
+    } finally {
+      isAuthSessionActive.current = false;
     }
   };
 
