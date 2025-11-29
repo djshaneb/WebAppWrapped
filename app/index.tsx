@@ -274,7 +274,33 @@ export default function HomeScreen() {
   };
 
   const handleGoogleLogin = async (url: string) => {
-    console.log('[RN] Opening Google OAuth in system browser:', url);
+    console.log('[RN] ====== GOOGLE OAUTH DEBUG ======');
+    console.log('[RN] Full OAuth URL:', url);
+
+    // Extract and log key parameters
+    try {
+      const urlObj = new URL(url);
+      const clientId = urlObj.searchParams.get('client_id');
+      const redirectUri = urlObj.searchParams.get('redirect_uri');
+      const responseType = urlObj.searchParams.get('response_type');
+
+      console.log('[RN] Client ID:', clientId);
+      console.log('[RN] Redirect URI:', redirectUri);
+      console.log('[RN] Response Type:', responseType);
+      console.log('[RN] ================================');
+
+      // Log client type hint
+      if (clientId) {
+        if (clientId.includes('.apps.googleusercontent.com')) {
+          console.log('[RN] ⚠️  IMPORTANT: Check if this Client ID is:');
+          console.log('[RN]     - Type: iOS or Android (✅ Correct)');
+          console.log('[RN]     - Type: Web (❌ Wrong - this causes Error 400)');
+          console.log('[RN] Go to Google Console → Credentials to verify');
+        }
+      }
+    } catch (e) {
+      console.warn('[RN] Could not parse OAuth URL:', e);
+    }
 
     try {
       if (url === 'GOOGLE_LOGIN_REQUESTED' || !url.startsWith('http')) {

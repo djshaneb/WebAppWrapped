@@ -1,19 +1,24 @@
 # WeddingWin - Google OAuth Native Bridge
 
-## 🚨 Quick Fix for Error 400
+## 🚨 Still Getting Error 400?
 
-Getting `Error 400: invalid_request` from Google?
+Getting `Error 400: invalid_request - redirect_uri=mycoolapp://oauth-callback`?
 
-**→ Read: [QUICK_FIX.md](QUICK_FIX.md)** (5 minute fix)
+**→ First: Restart your app and check Metro logs for the Client ID**
 
-**→ Or: [GOOGLE_CONSOLE_SETUP_GUIDE.md](GOOGLE_CONSOLE_SETUP_GUIDE.md)** (visual guide)
+**→ Then Read: [IMMEDIATE_WORKAROUND.md](IMMEDIATE_WORKAROUND.md)** (works right now!)
+
+**→ Or: [FIX_REDIRECT_URI_ERROR.md](FIX_REDIRECT_URI_ERROR.md)** (comprehensive guide)
+
+**→ Or: [QUICK_FIX.md](QUICK_FIX.md)** (5 minute fix if you have iOS/Android client)
 
 ## 📚 Documentation
 
 ### Setup & Configuration
-- **[QUICK_FIX.md](QUICK_FIX.md)** - Fast fix for Error 400 (START HERE!)
-- **[FIX_REDIRECT_URI_ERROR.md](FIX_REDIRECT_URI_ERROR.md)** - Fix redirect_uri error (YOU ARE HERE!)
+- **[IMMEDIATE_WORKAROUND.md](IMMEDIATE_WORKAROUND.md)** - Works right now! (START HERE!)
+- **[FIX_REDIRECT_URI_ERROR.md](FIX_REDIRECT_URI_ERROR.md)** - Fix redirect_uri error
 - **[IDENTIFY_CLIENT_ID.md](IDENTIFY_CLIENT_ID.md)** - Find which Client ID you're using
+- **[QUICK_FIX.md](QUICK_FIX.md)** - Fast fix for Error 400 (if you have iOS/Android client)
 - **[GOOGLE_CONSOLE_SETUP_GUIDE.md](GOOGLE_CONSOLE_SETUP_GUIDE.md)** - Visual walkthrough
 - **[GOOGLE_OAUTH_ERROR_FIX.md](GOOGLE_OAUTH_ERROR_FIX.md)** - Detailed error explanation
 - **[OAUTH_SETUP_INSTRUCTIONS.md](OAUTH_SETUP_INSTRUCTIONS.md)** - Configuration guide
