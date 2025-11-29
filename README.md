@@ -1,19 +1,36 @@
 # WeddingWin - Google OAuth Native Bridge
 
-## 🚨 IMPORTANT: Google OAuth Policy Change (2024/2025)
+## 🚨 Getting `redirect_uri_mismatch` Error?
 
-Getting `Error 400: invalid_request - redirect_uri=mycoolapp://oauth-callback`?
+```
+Error 400: redirect_uri_mismatch
+redirect_uri=https://weddingwin.ca/oauth-callback
+```
 
-**Google no longer supports custom URI schemes by default!**
+**→ Quick Fix: [QUICK_REFERENCE.md](QUICK_REFERENCE.md)** (2 minutes)
 
-**→ READ: [OAUTH_POLICY_UPDATE_2024.md](OAUTH_POLICY_UPDATE_2024.md)** - Explains the policy change
+**→ Detailed Guide: [ADD_REDIRECT_URI_GUIDE.md](ADD_REDIRECT_URI_GUIDE.md)**
 
-**This app now uses HTTPS redirects with Universal Links/App Links (compliant with Google's new policy)**
+**TL;DR:** Add `https://weddingwin.ca/oauth-callback` to Google Console → Authorized redirect URIs → Save
+
+---
+
+## ℹ️ About Google OAuth Policy Change (2024/2025)
+
+Google no longer supports custom URI schemes (`mycoolapp://`) by default.
+
+**This app now uses HTTPS redirects** (`https://weddingwin.ca/oauth-callback`) which is:
+- ✅ Google's recommended approach
+- ✅ More secure
+- ✅ Works immediately
+
+**Learn more:** [OAUTH_POLICY_UPDATE_2024.md](OAUTH_POLICY_UPDATE_2024.md)
 
 ## 📚 Documentation
 
 ### Setup & Configuration (UPDATED FOR 2024/2025)
-- **[OAUTH_POLICY_UPDATE_2024.md](OAUTH_POLICY_UPDATE_2024.md)** - ⚠️ READ THIS FIRST - Google's new policy
+- **[ADD_REDIRECT_URI_GUIDE.md](ADD_REDIRECT_URI_GUIDE.md)** - ⭐ **START HERE** - Fix redirect_uri_mismatch (2 min)
+- **[OAUTH_POLICY_UPDATE_2024.md](OAUTH_POLICY_UPDATE_2024.md)** - ⚠️ Google's new policy explained
 - **[IMMEDIATE_WORKAROUND.md](IMMEDIATE_WORKAROUND.md)** - Alternative solutions
 - **[FIX_REDIRECT_URI_ERROR.md](FIX_REDIRECT_URI_ERROR.md)** - Fix redirect_uri error
 - **[IDENTIFY_CLIENT_ID.md](IDENTIFY_CLIENT_ID.md)** - Find which Client ID you're using

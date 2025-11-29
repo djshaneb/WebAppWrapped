@@ -306,14 +306,21 @@ export default function HomeScreen() {
       console.log('[RN] Response Type:', responseType);
       console.log('[RN] ================================');
 
-      // Log client type hint
-      if (clientId) {
-        if (clientId.includes('.apps.googleusercontent.com')) {
-          console.log('[RN] ⚠️  IMPORTANT: Check if this Client ID is:');
-          console.log('[RN]     - Type: iOS or Android (✅ Correct)');
-          console.log('[RN]     - Type: Web (❌ Wrong - this causes Error 400)');
-          console.log('[RN] Go to Google Console → Credentials to verify');
-        }
+      // Provide helpful instructions
+      if (redirectUri === 'https://weddingwin.ca/oauth-callback') {
+        console.log('[RN] ✅ Using HTTPS redirect (compliant with Google policy)');
+        console.log('[RN]');
+        console.log('[RN] If you get "redirect_uri_mismatch" error:');
+        console.log('[RN] 1. Go to: console.cloud.google.com/apis/credentials');
+        console.log('[RN] 2. Find Client ID:', clientId);
+        console.log('[RN] 3. Add redirect URI: https://weddingwin.ca/oauth-callback');
+        console.log('[RN] 4. Save (works immediately!)');
+        console.log('[RN]');
+        console.log('[RN] See: ADD_REDIRECT_URI_GUIDE.md for detailed steps');
+      } else if (redirectUri?.startsWith('mycoolapp://')) {
+        console.log('[RN] ⚠️  Using custom URI scheme (deprecated by Google)');
+        console.log('[RN] This may cause "Error 400: invalid_request"');
+        console.log('[RN] Consider switching to HTTPS redirect');
       }
     } catch (e) {
       console.warn('[RN] Could not parse OAuth URL:', e);
