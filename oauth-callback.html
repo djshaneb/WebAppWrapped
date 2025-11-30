@@ -236,11 +236,15 @@
                 </div>
             `;
 
-            // Try automatic redirect (may not work on iOS, but worth trying)
-            setTimeout(() => {
-                console.log('[OAuth Callback] Attempting automatic redirect...');
-                window.location.href = customSchemeUrl;
-            }, 500);
+            // Try automatic redirect immediately
+            console.log('[OAuth Callback] Attempting automatic redirect...');
+            window.location.href = customSchemeUrl;
+
+            // Also try using a meta refresh as backup
+            const meta = document.createElement('meta');
+            meta.httpEquiv = 'refresh';
+            meta.content = `0;url=${customSchemeUrl}`;
+            document.head.appendChild(meta);
 
         } else {
             // No tokens found

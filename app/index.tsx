@@ -45,17 +45,14 @@ const injectedJavaScript = `
 
         // Check if this is a Google OAuth URL
         if (urlObj.hostname.includes('accounts.google.com')) {
-          // Replace redirect_uri with HTTPS redirect (Google's new policy)
           const currentRedirectUri = urlObj.searchParams.get('redirect_uri');
           console.log('[WebView] Current redirect_uri:', currentRedirectUri);
 
-          // Use HTTPS redirect with Universal Links/App Links instead of custom scheme
-          // This complies with Google's new OAuth policy
-          urlObj.searchParams.set('redirect_uri', 'https://www.weddingwin.ca/oauth-callback');
+          // Keep the custom URI scheme - it's the most reliable for development
+          urlObj.searchParams.set('redirect_uri', 'mycoolapp://oauth-callback');
           const modifiedUrl = urlObj.toString();
 
-          console.log('[WebView] Modified redirect_uri to: https://www.weddingwin.ca/oauth-callback');
-          console.log('[WebView] Using HTTPS redirect (Google OAuth policy compliant)');
+          console.log('[WebView] Modified redirect_uri to: mycoolapp://oauth-callback');
           return modifiedUrl;
         }
       } catch (e) {
@@ -216,15 +213,31 @@ export default function HomeScreen() {
             `;
             webViewRef.current.injectJavaScript(successScript);
 
-            // Also navigate back to the main page to ensure WebView shows content
-            setTimeout(() => {
-              if (webViewRef.current) {
-                webViewRef.current.injectJavaScript(`
-                  window.location.href = '${STARTING_URL}';
-                  true;
-                `);
-              }
-            }, 500);
+            // Close Safari/Chrome and return to app
+            if (isCustomScheme) {
+              console.log('[RN] Custom scheme callback - browser should auto-close');
+              // For custom scheme, browser automatically closes
+              // Just navigate WebView back to main page
+              setTimeout(() => {
+                if (webViewRef.current) {
+                  webViewRef.current.injectJavaScript(`
+                    window.location.href = '${STARTING_URL}';
+                    true;
+                  `);
+                }
+              }, 100);
+            } else {
+              console.log('[RN] HTTPS callback - attempting to close browser');
+              // For HTTPS callback, try to dismiss the browser
+              setTimeout(() => {
+                if (webViewRef.current) {
+                  webViewRef.current.injectJavaScript(`
+                    window.location.href = '${STARTING_URL}';
+                    true;
+                  `);
+                }
+              }, 100);
+            }
           }
         }
       } catch (error) {
@@ -333,37 +346,12 @@ export default function HomeScreen() {
         return;
       }
 
-      console.log('[RN] Opening OAuth with system browser...');
+      console.log('[RN] Opening OAuth in system browser (Safari/Chrome)...');
+      console.log('[RN] Using custom URI scheme for reliable callback');
 
-      WebBrowser.maybeCompleteAuthSession();
-
-      const result = await WebBrowser.openAuthSessionAsync(
-        url,
-        'https://www.weddingwin.ca/oauth-callback',
-        {
-          showInRecents: true,
-          preferEphemeralSession: false
-        }
-      );
-
-      console.log('[RN] WebBrowser result:', result);
-
-      if (result.type === 'success' && result.url) {
-        console.log('[RN] OAuth completed successfully, processing callback URL');
-        handleOAuthCallback(result.url);
-      } else if (result.type === 'cancel') {
-        console.log('[RN] OAuth canceled by user');
-        if (webViewRef.current) {
-          webViewRef.current.injectJavaScript(`
-            if (window.onNativeLoginError) {
-              window.onNativeLoginError('User canceled login');
-            }
-            true;
-          `);
-        }
-      } else if (result.type === 'dismiss') {
-        console.log('[RN] OAuth dismissed');
-      }
+      await Linking.openURL(url);
+      console.log('[RN] Browser opened successfully');
+      console.log('[RN] Waiting for OAuth callback via deep link...');
     } catch (error) {
       console.error('[RN] Error opening in-app browser:', error);
       if (webViewRef.current) {
