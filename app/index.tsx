@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChevronLeft, ChevronRight } from 'lucide-react-native';
 import * as Linking from 'expo-linking';
+import * as WebBrowser from 'expo-web-browser';
 
 const STARTING_URL = 'https://www.weddingwin.ca/webapp';
 
@@ -139,13 +140,7 @@ export default function HomeScreen() {
   const [key, setKey] = useState(0);
   const webViewRef = useRef<WebView>(null);
 
-  useEffect(() => {
-    const handleDeepLink = (event: { url: string }) => {
-      console.log('[RN] Deep link received:', event.url);
-      handleOAuthCallback(event.url);
-    };
-
-    const handleOAuthCallback = (url: string) => {
+  const handleOAuthCallback = (url: string) => {
       if (!url || !webViewRef.current) return;
 
       console.log('[RN] Processing OAuth callback URL:', url);
@@ -235,6 +230,12 @@ export default function HomeScreen() {
       } catch (error) {
         console.error('[RN] Error parsing OAuth callback URL:', error);
       }
+    };
+
+  useEffect(() => {
+    const handleDeepLink = (event: { url: string }) => {
+      console.log('[RN] Deep link received:', event.url);
+      handleOAuthCallback(event.url);
     };
 
     // Handle initial URL if app was opened via deep link
@@ -332,10 +333,41 @@ export default function HomeScreen() {
         return;
       }
 
-      const result = await Linking.openURL(url);
-      console.log('[RN] Browser opened successfully');
+      console.log('[RN] Opening OAuth in in-app browser...');
+
+      const result = await WebBrowser.openAuthSessionAsync(
+        url,
+        'https://www.weddingwin.ca/oauth-callback'
+      );
+
+      console.log('[RN] WebBrowser result:', result);
+
+      if (result.type === 'success' && result.url) {
+        console.log('[RN] OAuth completed successfully, processing callback URL');
+        handleOAuthCallback(result.url);
+      } else if (result.type === 'cancel') {
+        console.log('[RN] OAuth canceled by user');
+        if (webViewRef.current) {
+          webViewRef.current.injectJavaScript(`
+            if (window.onNativeLoginError) {
+              window.onNativeLoginError('User canceled login');
+            }
+            true;
+          `);
+        }
+      } else if (result.type === 'dismiss') {
+        console.log('[RN] OAuth dismissed');
+      }
     } catch (error) {
-      console.error('[RN] Error opening browser:', error);
+      console.error('[RN] Error opening in-app browser:', error);
+      if (webViewRef.current) {
+        webViewRef.current.injectJavaScript(`
+          if (window.onNativeLoginError) {
+            window.onNativeLoginError('Failed to open browser');
+          }
+          true;
+        `);
+      }
     }
   };
 
