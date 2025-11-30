@@ -1,0 +1,19 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "TEAMID.com.weddingwin.app",
+        "paths": [
+          "/oauth-callback",
+          "/oauth-callback/*"
+        ]
+      }
+    ]
+  },
+  "webcredentials": {
+    "apps": [
+      "TEAMID.com.weddingwin.app"
+    ]
+  }
+}

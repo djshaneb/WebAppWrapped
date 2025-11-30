@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Authentication Success - WeddingWin</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+        }
+
+        .container {
+            text-align: center;
+            padding: 2rem;
+            max-width: 400px;
+            width: 100%;
+        }
+
+        .success-icon {
+            font-size: 64px;
+            margin-bottom: 1rem;
+            animation: scaleIn 0.5s ease-out;
+        }
+
+        @keyframes scaleIn {
+            0% { transform: scale(0); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        .message {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+
+        .submessage {
+            font-size: 1rem;
+            margin-bottom: 2rem;
+            opacity: 0.9;
+        }
+
+        .button {
+            display: inline-block;
+            width: 100%;
+            padding: 18px 24px;
+            background: white;
+            color: #667eea;
+            border-radius: 12px;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 1.1rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            transition: transform 0.2s, box-shadow 0.2s;
+            animation: pulse 2s infinite;
+            border: none;
+            cursor: pointer;
+        }
+
+        .button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        .button:active {
+            transform: translateY(0);
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            }
+            50% {
+                box-shadow: 0 4px 30px rgba(255, 255, 255, 0.4);
+            }
+        }
+
+        .details {
+            font-size: 0.85rem;
+            opacity: 0.8;
+            margin-top: 1.5rem;
+            line-height: 1.5;
+        }
+
+        .error {
+            color: #f87171;
+        }
+
+        .error-container {
+            background: rgba(248, 113, 113, 0.2);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-top: 1rem;
+        }
+
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 4px solid white;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .help-text {
+            margin-top: 1rem;
+            font-size: 0.8rem;
+            opacity: 0.7;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="spinner" class="spinner hidden"></div>
+        <div id="success-icon" class="success-icon hidden">✅</div>
+        <div id="error-icon" class="success-icon hidden">❌</div>
+        <div id="message" class="message"></div>
+        <div id="submessage" class="submessage"></div>
+        <button id="openAppButton" class="button hidden">Open WeddingWin App</button>
+        <div id="details" class="details"></div>
+    </div>
+
+    <script>
+        console.log('[OAuth Callback] Page loaded');
+        console.log('[OAuth Callback] URL:', window.location.href);
+        console.log('[OAuth Callback] Search:', window.location.search);
+        console.log('[OAuth Callback] Hash:', window.location.hash);
+
+        // Extract tokens from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const hash = new URLSearchParams(window.location.hash.substring(1));
+
+        // Try both query params and hash fragment
+        const accessToken = urlParams.get('access_token') || hash.get('access_token');
+        const idToken = urlParams.get('id_token') || hash.get('id_token');
+        const code = urlParams.get('code') || hash.get('code');
+        const error = urlParams.get('error') || hash.get('error');
+        const errorDescription = urlParams.get('error_description') || hash.get('error_description');
+
+        console.log('[OAuth Callback] Tokens:', {
+            hasAccessToken: !!accessToken,
+            hasIdToken: !!idToken,
+            hasCode: !!code,
+            error: error,
+            errorDescription: errorDescription
+        });
+
+        const messageEl = document.getElementById('message');
+        const submessageEl = document.getElementById('submessage');
+        const detailsEl = document.getElementById('details');
+        const spinnerEl = document.getElementById('spinner');
+        const buttonEl = document.getElementById('openAppButton');
+        const successIconEl = document.getElementById('success-icon');
+        const errorIconEl = document.getElementById('error-icon');
+
+        if (error) {
+            // Handle authentication error
+            console.error('[OAuth Callback] Authentication error:', error, errorDescription);
+            errorIconEl.classList.remove('hidden');
+            messageEl.textContent = 'Authentication Failed';
+            messageEl.className = 'message error';
+            submessageEl.textContent = errorDescription || error;
+            submessageEl.className = 'submessage error';
+            detailsEl.innerHTML = `
+                <div class="error-container">
+                    <strong>Error:</strong> ${error}<br>
+                    ${errorDescription ? `<strong>Details:</strong> ${errorDescription}<br>` : ''}
+                    <div class="help-text">
+                        Please close this window and try again.
+                    </div>
+                </div>
+            `;
+        } else if (accessToken || idToken || code) {
+            // Successful authentication - show button immediately
+            console.log('[OAuth Callback] Authentication successful!');
+            successIconEl.classList.remove('hidden');
+            messageEl.textContent = 'Login Successful!';
+            submessageEl.textContent = 'Tap the button below to return to your app';
+
+            // Build deep link URL with all parameters
+            const customSchemeUrl = `mycoolapp://oauth-callback${window.location.search}${window.location.hash}`;
+            console.log('[OAuth Callback] Deep link URL:', customSchemeUrl);
+
+            // Set up the button
+            buttonEl.href = customSchemeUrl;
+            buttonEl.classList.remove('hidden');
+
+            // Add click handler for better tracking
+            buttonEl.addEventListener('click', function(e) {
+                e.preventDefault();
+                console.log('[OAuth Callback] Button clicked, attempting to open app...');
+
+                // Try to open the app
+                window.location.href = customSchemeUrl;
+
+                // Update UI after attempt
+                setTimeout(() => {
+                    detailsEl.innerHTML = `
+                        <strong>App not opening?</strong><br>
+                        • Make sure WeddingWin app is installed<br>
+                        • Try manually switching to the WeddingWin app<br>
+                        • If using Expo Go, ensure it's running<br>
+                        <div class="help-text">You can close this window after opening the app</div>
+                    `;
+                }, 1000);
+            });
+
+            detailsEl.innerHTML = `
+                <div class="help-text">
+                    The button will open the app on your device.<br>
+                    This window can be closed after the app opens.
+                </div>
+            `;
+
+            // Try automatic redirect (may not work on iOS, but worth trying)
+            setTimeout(() => {
+                console.log('[OAuth Callback] Attempting automatic redirect...');
+                window.location.href = customSchemeUrl;
+            }, 500);
+
+        } else {
+            // No tokens found
+            console.warn('[OAuth Callback] No authentication tokens found in URL');
+            errorIconEl.classList.remove('hidden');
+            messageEl.textContent = 'No Authentication Data';
+            messageEl.className = 'message error';
+            submessageEl.textContent = 'No tokens were received from the authentication provider.';
+            detailsEl.innerHTML = `
+                <div class="error-container">
+                    <strong>What happened?</strong><br>
+                    The authentication completed but no tokens were returned.<br>
+                    <div class="help-text">
+                        Please close this window and try logging in again.
+                    </div>
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>
