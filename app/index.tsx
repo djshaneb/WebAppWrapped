@@ -333,11 +333,17 @@ export default function HomeScreen() {
         return;
       }
 
-      console.log('[RN] Opening OAuth in in-app browser...');
+      console.log('[RN] Opening OAuth with system browser...');
+
+      WebBrowser.maybeCompleteAuthSession();
 
       const result = await WebBrowser.openAuthSessionAsync(
         url,
-        'https://www.weddingwin.ca/oauth-callback'
+        'https://www.weddingwin.ca/oauth-callback',
+        {
+          showInRecents: true,
+          preferEphemeralSession: false
+        }
       );
 
       console.log('[RN] WebBrowser result:', result);
