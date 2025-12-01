@@ -6,7 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": [
-      "mycoolapp",
+      "bolt-expo-nativewind",
       "com.googleusercontent.apps.655876057326-34nnmbkgd077bjlsqvba0tke25mlkhm3"
     ],
     "userInterfaceStyle": "automatic",
