@@ -82,7 +82,12 @@ export default function HomeScreen() {
       console.log('[RN] Deep link received:', event.url);
 
       const url = event.url;
-      if (url.includes('#access_token=') || url.includes('?access_token=')) {
+
+      // Handle both custom scheme (mycoolapp://) and universal links (https://)
+      const isAuthCallback = url.includes('oauth-callback') || url.includes('auth/callback');
+      const hasToken = url.includes('#access_token=') || url.includes('?access_token=');
+
+      if (isAuthCallback && hasToken) {
         try {
           const params = new URLSearchParams(
             url.includes('#') ? url.split('#')[1] : url.split('?')[1]
@@ -207,7 +212,7 @@ export default function HomeScreen() {
     try {
       console.log('[RN] Starting native Google OAuth flow');
 
-      const redirectUrl = 'mycoolapp://auth/callback';
+      const redirectUrl = 'https://weddingwin.ca/oauth-callback';
       console.log('[RN] Redirect URL:', redirectUrl);
 
       const { data, error } = await supabase.auth.signInWithOAuth({

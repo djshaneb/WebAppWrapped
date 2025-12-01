@@ -202,11 +202,14 @@
             submessageEl.textContent = 'Tap the button below to return to your app';
 
             // Build deep link URL with all parameters
+            // Try HTTPS universal link first (works in Expo Go), fallback to custom scheme
+            const httpsDeepLink = `https://weddingwin.ca/oauth-callback${window.location.search}${window.location.hash}`;
             const customSchemeUrl = `mycoolapp://oauth-callback${window.location.search}${window.location.hash}`;
-            console.log('[OAuth Callback] Deep link URL:', customSchemeUrl);
+            console.log('[OAuth Callback] HTTPS deep link:', httpsDeepLink);
+            console.log('[OAuth Callback] Custom scheme:', customSchemeUrl);
 
             // Set up the button
-            buttonEl.href = customSchemeUrl;
+            buttonEl.href = httpsDeepLink;
             buttonEl.classList.remove('hidden');
 
             // Add click handler for better tracking
@@ -214,8 +217,13 @@
                 e.preventDefault();
                 console.log('[OAuth Callback] Button clicked, attempting to open app...');
 
-                // Try to open the app
-                window.location.href = customSchemeUrl;
+                // Try HTTPS deep link first (for iOS universal links)
+                window.location.href = httpsDeepLink;
+
+                // Fallback to custom scheme after delay
+                setTimeout(() => {
+                    window.location.href = customSchemeUrl;
+                }, 500);
 
                 // Update UI after attempt
                 setTimeout(() => {
@@ -236,15 +244,14 @@
                 </div>
             `;
 
-            // Try automatic redirect immediately
+            // Try automatic redirect immediately with HTTPS deep link
             console.log('[OAuth Callback] Attempting automatic redirect...');
-            window.location.href = customSchemeUrl;
+            window.location.href = httpsDeepLink;
 
-            // Also try using a meta refresh as backup
-            const meta = document.createElement('meta');
-            meta.httpEquiv = 'refresh';
-            meta.content = `0;url=${customSchemeUrl}`;
-            document.head.appendChild(meta);
+            // Fallback to custom scheme after a short delay
+            setTimeout(() => {
+                window.location.href = customSchemeUrl;
+            }, 1000);
 
         } else {
             // No tokens found
