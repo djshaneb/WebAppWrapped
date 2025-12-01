@@ -2,10 +2,13 @@
   "expo": {
     "name": "bolt-expo-nativewind",
     "slug": "bolt-expo-nativewind",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": ["mycoolapp", "com.googleusercontent.apps.655876057326-34nnmbkgd077bjlsqvba0tke25mlkhm3"],
+    "scheme": [
+      "mycoolapp",
+      "com.googleusercontent.apps.655876057326-34nnmbkgd077bjlsqvba0tke25mlkhm3"
+    ],
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
@@ -13,8 +16,13 @@
       "bundleIdentifier": "com.weddingwin.app",
       "associatedDomains": [
         "applinks:weddingwin.ca",
+        "applinks:www.weddingwin.ca",
+        "applinks:weddingwin.ca",
         "applinks:www.weddingwin.ca"
-      ]
+      ],
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "package": "com.weddingwin.app",
@@ -34,7 +42,10 @@
               "pathPrefix": "/oauth-callback"
             }
           ],
-          "category": ["BROWSABLE", "DEFAULT"]
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
         }
       ]
     },
@@ -50,6 +61,12 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "11db546d-12cb-4fd8-8423-ac14b508f682"
+      }
     }
   }
 }
