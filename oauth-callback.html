@@ -150,6 +150,10 @@
         console.log('[OAuth Callback] Search:', window.location.search);
         console.log('[OAuth Callback] Hash:', window.location.hash);
 
+        // Detect if this is a mobile browser
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        console.log('[OAuth Callback] Is mobile:', isMobile);
+
         // Extract tokens from URL
         const urlParams = new URLSearchParams(window.location.search);
         const hash = new URLSearchParams(window.location.hash.substring(1));
@@ -199,59 +203,100 @@
             console.log('[OAuth Callback] Authentication successful!');
             successIconEl.classList.remove('hidden');
             messageEl.textContent = 'Login Successful!';
-            submessageEl.textContent = 'Tap the button below to return to your app';
 
             // Build deep link URL with all parameters
-            // Try HTTPS universal link first (works in Expo Go), fallback to custom scheme
-            const httpsDeepLink = `https://weddingwin.ca/oauth-callback${window.location.search}${window.location.hash}`;
             const customSchemeUrl = `mycoolapp://oauth-callback${window.location.search}${window.location.hash}`;
-            console.log('[OAuth Callback] HTTPS deep link:', httpsDeepLink);
+            const httpsDeepLink = `https://weddingwin.ca/oauth-callback${window.location.search}${window.location.hash}`;
             console.log('[OAuth Callback] Custom scheme:', customSchemeUrl);
+            console.log('[OAuth Callback] HTTPS deep link:', httpsDeepLink);
 
-            // Set up the button
-            buttonEl.href = httpsDeepLink;
+            // For mobile (Expo Go): prioritize custom scheme, for desktop: use HTTPS
+            const primaryUrl = isMobile ? customSchemeUrl : httpsDeepLink;
+            const fallbackUrl = isMobile ? httpsDeepLink : customSchemeUrl;
+
+            // Update UI based on platform
+            if (isMobile) {
+                submessageEl.textContent = 'Tap the button below to open the app';
+            } else {
+                submessageEl.textContent = 'Click the button to continue';
+            }
+
+            // Set up the button - show immediately
             buttonEl.classList.remove('hidden');
+            buttonEl.textContent = isMobile ? 'Open App in Expo Go' : 'Open WeddingWin App';
 
             // Add click handler for better tracking
             buttonEl.addEventListener('click', function(e) {
                 e.preventDefault();
                 console.log('[OAuth Callback] Button clicked, attempting to open app...');
+                console.log('[OAuth Callback] Trying primary URL:', primaryUrl);
 
-                // Try HTTPS deep link first (for iOS universal links)
-                window.location.href = httpsDeepLink;
+                // Try primary URL (custom scheme for mobile, HTTPS for desktop)
+                window.location.href = primaryUrl;
 
-                // Fallback to custom scheme after delay
+                // Quick fallback
                 setTimeout(() => {
-                    window.location.href = customSchemeUrl;
-                }, 500);
+                    console.log('[OAuth Callback] Trying fallback URL:', fallbackUrl);
+                    window.location.href = fallbackUrl;
+                }, 300);
 
                 // Update UI after attempt
                 setTimeout(() => {
-                    detailsEl.innerHTML = `
-                        <strong>App not opening?</strong><br>
-                        • Make sure WeddingWin app is installed<br>
-                        • Try manually switching to the WeddingWin app<br>
-                        • If using Expo Go, ensure it's running<br>
-                        <div class="help-text">You can close this window after opening the app</div>
-                    `;
-                }, 1000);
+                    if (isMobile) {
+                        detailsEl.innerHTML = `
+                            <strong>App not opening?</strong><br>
+                            • Make sure Expo Go is running<br>
+                            • Try manually switching to Expo Go<br>
+                            • Look for "Open in Expo Go" prompt<br>
+                            <div class="help-text">You can close this browser tab after the app opens</div>
+                        `;
+                    } else {
+                        detailsEl.innerHTML = `
+                            <strong>App not opening?</strong><br>
+                            • Make sure the WeddingWin app is installed<br>
+                            • Try manually switching to the app<br>
+                            <div class="help-text">You can close this window after opening the app</div>
+                        `;
+                    }
+                }, 800);
             });
 
-            detailsEl.innerHTML = `
-                <div class="help-text">
-                    The button will open the app on your device.<br>
-                    This window can be closed after the app opens.
-                </div>
-            `;
+            if (isMobile) {
+                detailsEl.innerHTML = `
+                    <div class="help-text">
+                        <strong>Using Expo Go?</strong><br>
+                        The button above will open your app.<br>
+                        If automatic redirect doesn't work, just tap the button!
+                    </div>
+                `;
+            } else {
+                detailsEl.innerHTML = `
+                    <div class="help-text">
+                        The button will open the app on your device.<br>
+                        This window can be closed after the app opens.
+                    </div>
+                `;
+            }
 
-            // Try automatic redirect immediately with HTTPS deep link
+            // Try automatic redirect - prioritize custom scheme for mobile
             console.log('[OAuth Callback] Attempting automatic redirect...');
-            window.location.href = httpsDeepLink;
+            console.log('[OAuth Callback] Primary URL:', primaryUrl);
 
-            // Fallback to custom scheme after a short delay
-            setTimeout(() => {
+            // For mobile, try custom scheme immediately (works better in Expo Go)
+            if (isMobile) {
                 window.location.href = customSchemeUrl;
-            }, 1000);
+                // Quick fallback to HTTPS
+                setTimeout(() => {
+                    console.log('[OAuth Callback] Trying HTTPS fallback...');
+                    window.location.href = httpsDeepLink;
+                }, 100);
+            } else {
+                // For desktop, try HTTPS first
+                window.location.href = httpsDeepLink;
+                setTimeout(() => {
+                    window.location.href = customSchemeUrl;
+                }, 500);
+            }
 
         } else {
             // No tokens found

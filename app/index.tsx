@@ -80,6 +80,7 @@ export default function HomeScreen() {
   useEffect(() => {
     const handleDeepLink = async (event: { url: string }) => {
       console.log('[RN] Deep link received:', event.url);
+      console.log('[RN] User agent:', navigator.userAgent);
 
       const url = event.url;
 
@@ -87,7 +88,11 @@ export default function HomeScreen() {
       const isAuthCallback = url.includes('oauth-callback') || url.includes('auth/callback');
       const hasToken = url.includes('#access_token=') || url.includes('?access_token=');
 
+      console.log('[RN] isAuthCallback:', isAuthCallback);
+      console.log('[RN] hasToken:', hasToken);
+
       if (isAuthCallback && hasToken) {
+        console.log('[RN] Processing OAuth callback...');
         try {
           const params = new URLSearchParams(
             url.includes('#') ? url.split('#')[1] : url.split('?')[1]
