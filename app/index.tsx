@@ -207,7 +207,7 @@ export default function HomeScreen() {
     try {
       console.log('[RN] Starting native Google OAuth flow');
 
-      const redirectUrl = Linking.createURL('auth/callback');
+      const redirectUrl = 'mycoolapp://auth/callback';
       console.log('[RN] Redirect URL:', redirectUrl);
 
       const { data, error } = await supabase.auth.signInWithOAuth({
