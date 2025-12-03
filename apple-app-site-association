@@ -3,7 +3,7 @@
     "apps": [],
     "details": [
       {
-        "appID": "TEAMID.com.weddingwin.app",
+        "appID": "TEAMID.com.weddingwin.weddingwin4",
         "paths": [
           "/oauth-callback",
           "/oauth-callback/*"
@@ -13,7 +13,7 @@
   },
   "webcredentials": {
     "apps": [
-      "TEAMID.com.weddingwin.app"
+      "TEAMID.com.weddingwin.weddingwin4"
     ]
   }
 }

@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "WeddingWin3",
-    "slug": "weddingwin3",
+    "name": "WeddingWin4",
+    "slug": "weddingwin4",
     "version": "1.1.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -13,7 +13,7 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.weddingwin.app",
+      "bundleIdentifier": "com.weddingwin.weddingwin4",
       "associatedDomains": [
         "applinks:weddingwin.ca",
         "applinks:www.weddingwin.ca",
