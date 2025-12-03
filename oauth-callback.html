@@ -205,7 +205,7 @@
             messageEl.textContent = 'Login Successful!';
 
             // Build deep link URL with all parameters
-            const customSchemeUrl = `mycoolapp://oauth-callback${window.location.search}${window.location.hash}`;
+            const customSchemeUrl = `bolt-expo-nativewind://oauth-callback${window.location.search}${window.location.hash}`;
             const httpsDeepLink = `https://weddingwin.ca/oauth-callback${window.location.search}${window.location.hash}`;
             console.log('[OAuth Callback] Custom scheme:', customSchemeUrl);
             console.log('[OAuth Callback] HTTPS deep link:', httpsDeepLink);

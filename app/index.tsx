@@ -84,7 +84,7 @@ export default function HomeScreen() {
 
       const url = event.url;
 
-      // Handle both custom scheme (mycoolapp://) and universal links (https://)
+      // Handle both custom scheme (bolt-expo-nativewind://) and universal links (https://)
       const isAuthCallback = url.includes('oauth-callback') || url.includes('auth/callback');
       const hasToken = url.includes('#access_token=') || url.includes('?access_token=');
 
