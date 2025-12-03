@@ -1,12 +1,12 @@
 {
   "expo": {
-    "name": "bolt-expo-nativewind",
-    "slug": "bolt-expo-nativewind",
+    "name": "WeddingWin3",
+    "slug": "weddingwin3",
     "version": "1.1.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": [
-      "bolt-expo-nativewind",
+      "weddingwin3",
       "com.googleusercontent.apps.655876057326-34nnmbkgd077bjlsqvba0tke25mlkhm3"
     ],
     "userInterfaceStyle": "automatic",
@@ -65,7 +65,7 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "11db546d-12cb-4fd8-8423-ac14b508f682"
+        "projectId": "1a9f0fe2-4e69-445e-92bf-85217d7094a2"
       }
     }
   }
